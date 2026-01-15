@@ -26,20 +26,26 @@ EcoDrone AI is a production-ready Web Application designed to revolutionize affo
 - **Frontend**: React, Vite, Framer Motion, Leaflet, Vanilla CSS (Variables).
 - **Backend**: Python, FastAPI, OpenCV, PyTorch.
 
-## How to Run
-1. **Backend**:
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   python -m uvicorn app.main:app --reload
-   ```
-2. **Frontend**:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-3. Open `http://localhost:5173`
+## Quick Start (One-Click)
+We have included a robust automation script for Windows.
+1. Double-click **`run_app.bat`**.
+2. This will:
+   - Check environment (Node/Python).
+   - Install all dependencies.
+   - **Generate Sample Drone Imagery** (`sample_op1.png`, `sample_op3.png`) for testing.
+   - Launch Backend (Port 8000) and Frontend (Port 5173).
+
+## Manual Deployment
+### Vercel / Firebase (Frontend)
+The `frontend/` directory is pre-configured with `vercel.json` and `firebase.json` for seamless routing.
+1. `cd frontend`
+2. `npm run build`
+3. Deploy the `dist/` folder.
+
+### Render / Railway (Backend)
+The `backend/` directory contains `requirements.txt` optimized for cloud container extraction.
+1. Build Command: `pip install -r requirements.txt`
+2. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
 
 ## Author
 **Soumoditya Das**  
