@@ -1,9 +1,16 @@
+// ==========================================
+// Map Visualizer (Leaflet)
+// ==========================================
+// Renders drone orthomosaics using a "Simple CRS" (Coordinate Reference System).
+// This maps image pixels directly to map coordinates, avoiding complex Lat/Lng conversion
+// for local grid based analysis.
+
 import { useEffect, useState } from 'react';
 import { MapContainer, ImageOverlay, CircleMarker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default Leaflet icons
+// Fix for default Leaflet icons in Webpack/Vite builds
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 

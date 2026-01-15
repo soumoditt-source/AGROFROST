@@ -1,23 +1,34 @@
+/* 
+==========================================
+EcoDrone AI - Glassmorphism Design System
+Built by Soumoditya Das for Kshitij 2026
+========================================== 
+*/
+
 :root {
   /* Color Palette - EcoDrone Cyber Forest */
-  --bg-dark: #050d0a; /* Deep Jungle Black */
+  --bg-dark: #050d0a;
+  /* Deep Jungle Black */
   --bg-panel: rgba(255, 255, 255, 0.05);
   --bg-panel-hover: rgba(255, 255, 255, 0.08);
-  
-  --primary: #00ff94; /* Neon Sapling Green */
+
+  --primary: #00ff94;
+  /* Neon Sapling Green */
   --primary-dim: rgba(0, 255, 148, 0.2);
-  --secondary: #00d2ff; /* Sky Drone Blue */
-  --alert: #ff4d4d; /* Dead Sapling Red */
-  
+  --secondary: #00d2ff;
+  /* Sky Drone Blue */
+  --alert: #ff4d4d;
+  /* Dead Sapling Red */
+
   --text-main: #ffffff;
   --text-muted: #a3b3b0;
-  
+
   --glass-border: 1px solid rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  
+
   --radius-lg: 16px;
   --radius-md: 12px;
-  
+
   --font-main: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -29,7 +40,7 @@ body {
   font-family: var(--font-main);
   overflow-x: hidden;
   min-height: 100vh;
-  background-image: 
+  background-image:
     radial-gradient(circle at 15% 50%, rgba(0, 255, 148, 0.03) 0%, transparent 25%),
     radial-gradient(circle at 85% 30%, rgba(0, 210, 255, 0.03) 0%, transparent 25%);
 }
@@ -38,15 +49,18 @@ body {
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: var(--bg-dark); 
+  background: var(--bg-dark);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #333; 
+  background: #333;
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary); 
+  background: var(--primary);
 }
 
 /* Glassmorphism Utilities */
@@ -100,7 +114,9 @@ body {
 }
 
 /* Typography */
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   margin: 0;
   font-weight: 700;
   letter-spacing: -0.5px;
@@ -158,6 +174,11 @@ h1 {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
