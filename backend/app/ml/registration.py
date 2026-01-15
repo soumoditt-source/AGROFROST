@@ -15,11 +15,8 @@ def register_images(img1_bytes, img2_bytes):
     if img1 is None or img2 is None:
         return None
 
-    # 2. SIFT Detector (Scale-Invariant Feature Transform)
-    # ----------------------------------------------------
-    # Drones fly at different angles/heights. We need features that look the same
-    # regardless of zoom/rotation. SIFT is the gold standard for this.
-    sift = cv2.SIFT_create()
+    # 2. SIFT Detector (Enhanced Feature Sensitivity)
+    sift = cv2.SIFT_create(nfeatures=5000) # Increased for high-res drone maps
     kp1, des1 = sift.detectAndCompute(img1, None)
     kp2, des2 = sift.detectAndCompute(img2, None)
 

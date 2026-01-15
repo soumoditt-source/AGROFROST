@@ -49,8 +49,8 @@ const Dashboard = () => {
         formData.append('op3_image', op3File);
 
         try {
-            // Assuming backend is on port 8000
-            const response = await axios.post('http://localhost:8000/analyze', formData, {
+            // Production-Ready: Using relative path for Vercel/Cloud deployment
+            const response = await axios.post('/api/analyze', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setResult(response.data);
