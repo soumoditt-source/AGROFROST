@@ -25,8 +25,10 @@ class SurvivalClassifier:
         #     return "alive", 0.95
         
         # --- HEURISTIC FALLBACK (Greenery Detection) ---
-        # Simple Excess Green Index (ExG) check
-        # ExG = 2*G - R - B
+        # "Is it green? Then it's alive." 
+        # We use the Excess Green Index (ExG) which is standard in agriculture 
+        # for separating plants from soil/residue.
+        # Formula: ExG = 2*Green - Red - Blue
         if hasattr(image_patch, 'convert'):
              patch_np = np.array(image_patch.convert('RGB'))
         else:
@@ -35,14 +37,17 @@ class SurvivalClassifier:
         if patch_np.size == 0: return "dead", 0.0
 
         r, g, b = patch_np[:,:,0], patch_np[:,:,1], patch_np[:,:,2]
+        
+        # Calculate ExG for every pixel
         exg = 2.0 * g - r - b
         mean_exg = np.mean(exg)
         
-        # If mean excess green is high, it's likely a plant
+        # If mean excess green is high, it's likely a health sapling.
+        # Threshold (>20) is empirical based on typical soil contrast.
         if mean_exg > 20: 
-            return "alive", 0.8  # High greenness
+            return "alive", 0.8  # Strong Photosynthesis signal
         else:
-            return "dead", 0.6   # Low greenness (bare soil)
+            return "dead", 0.6   # Low greenness (bare soil / dry grass)
 
 def analyze_survival_at_pits(op3_image_input, pit_locations, gsd_cm_px=2.5):
     """

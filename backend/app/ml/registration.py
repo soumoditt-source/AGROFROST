@@ -15,33 +15,47 @@ def register_images(img1_bytes, img2_bytes):
     if img1 is None or img2 is None:
         return None
 
-    # 2. SIFT Detector
+    # 2. SIFT Detector (Scale-Invariant Feature Transform)
+    # ----------------------------------------------------
+    # Drones fly at different angles/heights. We need features that look the same
+    # regardless of zoom/rotation. SIFT is the gold standard for this.
     sift = cv2.SIFT_create()
     kp1, des1 = sift.detectAndCompute(img1, None)
     kp2, des2 = sift.detectAndCompute(img2, None)
 
-    # 3. Match Features (FLANN)
+    # 3. Match Features (FLANN based Matcher)
+    # ---------------------------------------
+    # We use a Fast Library for Approximate Nearest Neighbors to find
+    # similar keypoints between Year 1 (OP1) and Year X (OP3).
     FLANN_INDEX_KDTREE = 1
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-    search_params = dict(checks=50)
+    search_params = dict(checks=50) # Higher checks = more precision, slower
     flann = cv2.FlannBasedMatcher(index_params, search_params)
     
     matches = flann.knnMatch(des1, des2, k=2)
 
     # 4. Filter Good Matches (Lowe's Ratio Test)
+    # ------------------------------------------
+    # Discard ambiguous matches. If the best match is not significantly
+    # better than the 2nd best, it's noise.
     good = []
     for m, n in matches:
         if m.distance < 0.7 * n.distance:
             good.append(m)
 
     if len(good) > 10:
+        # We need at least 4 points for Homography, but 10 is safe.
         src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
 
-        # 5. Find Homography
+        # 5. Find Homography (RANSAC)
+        # ---------------------------
+        # Calculate the perspective transformation matrix that maps OP3 onto OP1.
+        # RANSAC ignores outliers (bad matches).
         M, mask = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5.0)
         
         # 6. Warp img2 to match img1
+        # Apply the matrix to align the images perfectly.
         h, w = img1.shape
         warped_img2 = cv2.warpPerspective(img2, M, (w, h))
         return warped_img2
