@@ -4,5 +4,4 @@ opencv-python-headless
 numpy
 Pillow
 python-multipart
-scikit-image
 
