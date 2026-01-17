@@ -1,3 +1,4 @@
+google-generativeai
 fastapi
 uvicorn
 opencv-python-headless
@@ -7,4 +8,4 @@ torchvision
 Pillow
 python-multipart
 scikit-image
-
+python-dotenv

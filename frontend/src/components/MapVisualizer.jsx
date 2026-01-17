@@ -6,7 +6,7 @@
 // for local grid based analysis.
 
 import { useEffect, useState } from 'react';
-import { MapContainer, ImageOverlay, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, ImageOverlay, CircleMarker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -55,8 +55,6 @@ const MapVisualizer = ({ op1Image, op3Image, analysisData }) => {
     // Image (0,0) -> Map [Height, 0] (Top-Left)
     // Image (w,h) -> Map [0, Width] (Bottom-Right)
     // So y_map = Height - y_image. x_map = x_image.
-
-    const imageHeight = bounds[1][0];
 
     return (
         <div>
@@ -111,8 +109,15 @@ const MapVisualizer = ({ op1Image, op3Image, analysisData }) => {
                         >
                             <Popup>
                                 <strong>Pit #{idx}</strong><br />
-                                Status: {pit.status.toUpperCase()}<br />
-                                Confidence: {(pit.confidence * 100).toFixed(1)}%
+                                Status: <span style={{ color: pit.status === 'alive' ? 'var(--primary)' : 'var(--alert)' }}>
+                                    {pit.status.toUpperCase()}
+                                </span><br />
+                                Confidence: {(pit.confidence * 100).toFixed(1)}%<br />
+                                {pit.reason && (
+                                    <small style={{ color: '#666', fontStyle: 'italic' }}>
+                                        "{pit.reason}"
+                                    </small>
+                                )}
                             </Popup>
                         </CircleMarker>
                     ))}

@@ -13,6 +13,7 @@ import './App.css';
 
 function App() {
   const [showResearch, setShowResearch] = useState(false);
+  const [modelType, setModelType] = useState('gemini');
 
   return (
     <div className="app-container">
@@ -28,6 +29,16 @@ function App() {
         </div>
 
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          {/* Model Selector */}
+          <select
+            className="glass-input"
+            style={{ padding: '8px 15px', borderRadius: '8px', cursor: 'pointer' }}
+            onChange={(e) => setModelType(e.target.value)}
+          >
+            <option value="gemini">✨ Gemini 1.5 Pro (Precision)</option>
+            <option value="fast">⚡ Standard Fast (Heuristic)</option>
+          </select>
+
           <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
             Built by Soumoditya Das | soumoditt@gmail.com
           </span>
@@ -43,7 +54,7 @@ function App() {
 
       {/* Main Content */}
       <main style={{ padding: '100px 5% 40px' }}>
-        <Dashboard />
+        <Dashboard modelType={modelType} />
       </main>
 
       {/* Research Modal */}

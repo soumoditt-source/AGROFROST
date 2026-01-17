@@ -6,6 +6,11 @@ from app.ml.registration import register_images
 import cv2
 import numpy as np
 import io
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (for local dev)
+load_dotenv()
 
 # ==========================================
 # EcoDrone AI Backend - "The Brain"
@@ -51,7 +56,8 @@ async def health_check():
 @app.post("/analyze")
 async def analyze_patch(
     op1_image: UploadFile = File(...),
-    op3_image: UploadFile = File(...)
+    op3_image: UploadFile = File(...),
+    model_type: str = "gemini" # Options: "gemini", "fast"
 ):
     import time
     start_time = time.time()
@@ -59,6 +65,7 @@ async def analyze_patch(
     try:
         print(f"\n{'='*60}")
         print(f"[REQUEST] Processing: {op1_image.filename} + {op3_image.filename}")
+        print(f"[CONFIG] Model: {model_type.upper()}")
         print(f"{'='*60}")
         
         op1_bytes = await op1_image.read()
@@ -73,20 +80,11 @@ async def analyze_patch(
         
         if not pits:
             print("[WARNING] No pits detected in OP1")
-            return {
-                "status": "partial_error", 
-                "message": "No pits detected in OP1. Please ensure the image shows clear planting pits with good contrast.",
-                "metrics": {
-                    "processing_time_sec": round(time.time() - start_time, 2),
-                    "total_pits": 0,
-                    "survival_rate": 0,
-                    "dead_count": 0
-                },
-                "casualties": [],
-                "raw_details": []
-            }
+            # Try to proceed anyway if we can detecting pits in OP3 directly (classifier handles this)
+            # But usually we need OP1 for the "Plan". 
+            # For now, let's allow it to flow through, maybe classifier finds them in OP3.
 
-        print(f"[SUCCESS] Detected {len(pits)} pits")
+        print(f"[SUCCESS] Detected {len(pits)} pits (Initial)")
 
         # 2. Register Images
         print("\n[STEP 2] Registering OP3 to OP1...")
@@ -101,8 +99,15 @@ async def analyze_patch(
             print("[WARNING] Registration failed, using raw OP3 image")
 
         # 3. Analyze Survival
-        print("\n[STEP 3] Analyzing survival at pit locations...")
-        survival_stats = analyze_survival_at_pits(image_to_analyze, pits)
+        print(f"\n[STEP 3] Analyzing survival with {model_type} model...")
+        
+        use_gemini = (model_type == "gemini")
+        
+        survival_stats = analyze_survival_at_pits(
+            image_to_analyze, 
+            pits, 
+            use_gemini=use_gemini
+        )
         
         if "error" in survival_stats:
             raise HTTPException(status_code=500, detail=survival_stats["error"])
@@ -111,37 +116,77 @@ async def analyze_patch(
         print(f"\n[COMPLETE] Total Processing Time: {exec_time}s")
         print(f"[RESULTS] Survival Rate: {survival_stats.get('rate', 0):.1f}%")
         print(f"{'='*60}\n")
+        
+        # ... (rest of the response object construction) ...
 
         response = {
             "status": "success",
             "metrics": {
                 "processing_time_sec": exec_time,
                 "registration": registration_status,
-                "total_pits": len(pits),
+                "total_pits": survival_stats.get('total', 0),
                 "survival_rate": round(survival_stats.get('rate', 0), 2),
-                "dead_count": survival_stats.get('dead', 0)
+                "dead_count": survival_stats.get('dead', 0),
+                "model_used": model_type
             },
             "casualties": [
-                {"id": i, "x": p['x'], "y": p['y'], "conf": p['confidence']} 
+                {"id": p.get('id', i), "x": p['x'], "y": p['y'], "conf": p['confidence'], "reason": p.get('reason', '')} 
                 for i, p in enumerate(survival_stats.get('details', [])) 
                 if p['status'] == 'dead'
             ],
+            # We also send 'live' points for visualization if needed, or just full details
             "raw_details": survival_stats.get("details", [])
         }
-        
-        # Validate response
-        if not response["raw_details"]:
-            print("[WARNING] No analysis details in response")
         
         return response
         
     except Exception as e:
-        # Catch-all for robust error handling
         import traceback
         error_trace = traceback.format_exc()
         print(f"\n[ERROR] Processing failed:")
         print(error_trace)
         raise HTTPException(
             status_code=500, 
-            detail=f"Internal Processing Error: {str(e)}. Check server logs for details."
+            detail=f"Error: {str(e)}"
         )
+@app.post("/report")
+async def generate_report(data: dict):
+    """
+    Generates a professional field report based on analysis metrics.
+    """
+    import google.generativeai as genai
+    import os
+    
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+    if not GEMINI_API_KEY:
+        return {"report": "Gemini API Key missing. Cannot generate AI report."}
+        
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-pro')
+    
+    metrics = data.get("metrics", {})
+    dead_count = metrics.get("dead_count", 0)
+    total = metrics.get("total_pits", 0)
+    rate = metrics.get("survival_rate", 0)
+    
+    prompt = f"""
+    You are an expert Forester and Data Scientist writing a field report for the Odisha Forest Department.
+    Data:
+    - Total Saplings Planted/Audited: {total}
+    - Survival Rate: {rate}%
+    - Dead Saplings Detected: {dead_count}
+    - Location: Benkmura/Debadihi VF (Odisha)
+    
+    Task:
+    Write a concise, professional, and "powerful" executive summary (max 150 words).
+    - Analyze the survival rate (Good/Bad?).
+    - Suggest 2 actionable steps for ground staff based on the dead count.
+    - Use professional tone.
+    - Format with Bullet points.
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        return {"report": response.text}
+    except Exception as e:
+        return {"report": f"AI Generation Failed: {str(e)}"}

@@ -1,225 +1,124 @@
-# 🌳 EcoDrone AI - Afforestation Monitoring System
+# 🌳 EcoDrone AI - "Super Version"
 
-**Gemini Cloud Hackathon 2026 Submission**  
+**The Ultimate Afforestation Monitoring System**  
+**Powered by Google Gemini 1.5 Pro & Vercel**
+
+**Hackathon**: Gemini Cloud Hackathon | Kshitij 2026  
 **Team**: Soumoditya Das  
 **Contact**: soumoditt@gmail.com
 
 ---
 
-## 🎯 Problem Statement
+## 🚀 The "Super Version" Upgrade
+This is the upgraded, **production-grade** version of EcoDrone AI. It moves beyond simple heuristics to use **Generative AI** for "Human-Level" analysis.
 
-Monitor 10,000+ saplings across 6.25 hectares using drone imagery to calculate survival rates and identify casualties. Compare baseline pit images (OP1) with current sapling growth (OP3) across multiple years.
-
-### Challenge Details
-- **Spacing**: 2.5m between saplings
-- **Drone Height**: 70-80m elevation
-- **Resolution**: 2.46-2.81 cm/pixel (GSD)
-- **Pit Size**: 45cm diameter, 1m cleared area visible from sky
-- **Timeline**: OP1 (pits) → OP2 (planting) → OP3 (Year 1/2/3 monitoring)
+### 🔥 Key Super-Features
+1.  **Gemini 1.5 Pro Vision**: Replaces standard CV logic with Google's state-of-the-art VLM to "see" and "reason" about sapling health (e.g., distinguishing dried sticks from empty holes).
+2.  **AI Field Reporter**: One-click generation of professional **Executive Summaries** for forest departments.
+3.  **Smart Batching**: Hybrid architecture (Fast CV + GenAI) to handle thousands of pits at zero cost.
+4.  **Glassmorphic Dashboard**: A premium, "Time-Travel" enabled visualization interface.
 
 ---
 
-## ✨ Solution Overview
-
-EcoDrone AI automates sapling survival analysis using computer vision and ML, providing:
-- **Automated Pit Detection**: Hough Circle Transform optimized for 45cm pits
-- **Image Registration**: SIFT-based alignment to handle GPS drift (±1m)
-- **Survival Classification**: ExG (Excess Green Index) + texture analysis
-- **Interactive Visualization**: Real-time map with alive/dead markers
-- **CSV Export**: Detailed casualty reports with coordinates
+## 🎯 Problem Statement
+Monitor 10,000+ saplings across 6.25 hectares using drone imagery to calculate survival rates.
+- **Input**: Raw Drone Imagery (OP1: Pits, OP3: Current Status)
+- **Challenge**: Low resolution, GPS drift, irregular spacing.
+- **Solution**: Automated registration, detection, and AI-powered classification.
 
 ---
 
 ## 🏗️ Architecture
 
 ### Backend (Python + FastAPI)
-- **Pit Detection** ([pit_detector.py](backend/app/ml/pit_detector.py)): Hough Circle Transform with adaptive parameters
-- **Image Registration** ([registration.py](backend/app/ml/registration.py)): SIFT + RANSAC for sub-meter alignment
-- **Survival Classifier** ([classifier.py](backend/app/ml/classifier.py)): ExG index + texture analysis
-- **API** ([main.py](backend/app/main.py)): RESTful endpoints with comprehensive logging
+- **🧠 Generative Core**: `Gemini 1.5 Pro` for visual analysis and report writing.
+- **👁️ Pit Detection**: Adaptive Hough Circle Transform.
+- **📍 Registration**: SIFT + RANSAC for sub-meter alignment.
+- **⚡ API**: FastAPI with optimized `/report` endpoint.
 
 ### Frontend (React + Vite)
-- **Dashboard**: Dual image upload with real-time analysis
-- **Map Visualizer**: Leaflet-based interactive map with time-travel slider
-- **Glassmorphism UI**: Premium design with smooth animations
+- **📊 Super Dashboard**: Glassmorphism UI with "Gemini vs Fast" model selector.
+- **🗺️ Interactive Map**: Leaflet visualizer with "Time-Travel" slider.
+- **📝 Automatic Reporting**: Displays AI-generated field reports directly in the UI.
 
 ---
 
 ## 🚀 Quick Start
 
-### Local Development
+### 1. Prerequisite
+Get a **Free** Google Gemini API Key from [Google AI Studio](https://aistudio.google.com/).
 
+### 2. Local Setup
 ```bash
-# 1. Install dependencies
-pip install -r requirements.txt
-cd frontend && npm install
+# Clone
+git clone <your-repo-url>
+cd EcoDrone-AI
 
-# 2. Generate test images
-python generate_samples.py
-
-# 3. Start backend
+# Backend
 cd backend
+pip install -r requirements.txt
+# Create .env file with GEMINI_API_KEY=your_key
 python -m uvicorn app.main:app --reload --port 8000
 
-# 4. Start frontend (new terminal)
-cd frontend
+# Frontend
+cd ../frontend
+npm install
 npm run dev
 ```
 
-Visit: `http://localhost:5173`
-
-### Deploy to Vercel (Production)
-
-```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy (one command!)
-vercel
-```
-
-Or connect your GitHub repo to Vercel for automatic deployments.
+### 3. Deploy to Vercel (Production)
+This project is configured for **One-Click Vercel Deployment**.
+1.  Push to GitHub.
+2.  Import in Vercel.
+3.  Add Environment Variable: `GEMINI_API_KEY`.
+4.  **Done!**
 
 ---
 
 ## 📊 Technical Methodology
 
-### 1. Pit Detection
-- **Algorithm**: Hough Circle Transform
-- **Parameters**: Optimized for 45cm diameter at 2.5cm/px GSD
-- **Radius Range**: 7-11 pixels (accounting for ±20% variance)
-- **Spacing**: Minimum 70px (2.5m / 2.5cm/px × 0.7)
+### 1. Hybrid Intelligence
+- **Tier 1 (Fast)**: ExG Index + Texture Analysis for bulk processing (>90% speed).
+- **Tier 2 (Precision)**: **Gemini 1.5 Pro** prompts like *"Analyze this crop. Is the sapling alive? If dead, explain why."* for ambiguity resolution and sampling.
 
-### 2. Image Registration
-- **Feature Detection**: SIFT (5000 features)
-- **Matching**: FLANN-based matcher with Lowe's ratio test (0.7)
-- **Transformation**: Homography with RANSAC outlier rejection
-- **Purpose**: Align OP3 to OP1 coordinate space despite GPS drift
-
-### 3. Survival Classification
-- **Alive Detection**: 
-  - ExG Index > 25 → 92% confidence
-  - ExG 15-25 + Texture > 30 → 75% confidence
-- **Dead Detection**: Low ExG or smooth texture (bare soil)
-- **Methodology**: Inspired by DeadTrees.Earth (University of Freiburg)
-
-### 4. Performance
-- **Processing Time**: 2-5 seconds per patch
-- **Memory**: ~500MB (optimized for Vercel 3GB limit)
-- **Accuracy**: 85-95% pit detection, 90%+ survival classification
-
----
-
-## 🎨 Key Features
-
-✅ **Production-Ready**: Deployed on Vercel free tier  
-✅ **Scalable**: Handles 10,000+ saplings per analysis  
-✅ **Fast**: Sub-5-second processing with serverless functions  
-✅ **Accurate**: Research-backed ML algorithms  
-✅ **User-Friendly**: Intuitive UI with real-time feedback  
-✅ **Exportable**: CSV download for further analysis  
-
----
-
-## 📁 Project Structure
-
-```
-EcoDrone-AI/
-├── api/
-│   └── index.py              # Vercel serverless entry point
-├── backend/
-│   └── app/
-│       ├── main.py           # FastAPI application
-│       └── ml/
-│           ├── pit_detector.py      # Hough Circle detection
-│           ├── registration.py      # SIFT alignment
-│           └── classifier.py        # Survival analysis
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Dashboard.jsx        # Main UI
-│   │   │   └── MapVisualizer.jsx    # Interactive map
-│   │   └── index.css                # Glassmorphism design
-│   └── package.json
-├── vercel.json               # Deployment configuration
-├── requirements.txt          # Python dependencies
-└── DEPLOYMENT.md            # Deployment guide
-```
-
----
-
-## 🔧 Dependencies
-
-### Backend
-- `fastapi` - Modern web framework
-- `opencv-python-headless` - Computer vision
-- `numpy` - Numerical computing
-- `scikit-image` - Image processing
-- `Pillow` - Image handling
-
-### Frontend
-- `react` - UI framework
-- `vite` - Build tool
-- `leaflet` - Interactive maps
-- `framer-motion` - Animations
-- `axios` - HTTP client
-
----
-
-## 📈 Results
-
-### Sample Analysis
-- **Total Pits**: 25 detected
-- **Survival Rate**: ~80%
-- **Dead Count**: 5 casualties
-- **Processing Time**: 2.5 seconds
-
-### Output
-- Interactive map with color-coded markers (green = alive, red = dead)
-- Downloadable CSV with casualty coordinates
-- Detailed confidence scores for each sapling
+### 2. Auto-Reporting
+- The system aggregates statistics (Survival %, Dead Count) and uses **Gemini Text** to write a contextual report:
+  > *"The patch shows an 82% survival rate. Recommended action: Manual replanting in the North-East sector where 15 casualties were clustered..."*
 
 ---
 
 ## 🏆 Hackathon Highlights
-
-### Innovation
-- **Zero-dependency UI**: Custom glassmorphism without heavy CSS frameworks
-- **Research-backed ML**: Methodology aligned with academic standards
-- **Production-ready**: Fully deployable on free tier cloud platforms
-
-### Technical Excellence
-- **Robust Error Handling**: Comprehensive logging and fallback mechanisms
-- **Optimized Performance**: Serverless-ready with 3GB memory limit
-- **Scalable Architecture**: Handles enterprise-scale afforestation projects
-
-### User Experience
-- **One-click deployment**: Vercel integration
-- **Intuitive interface**: No training required
-- **Real-time feedback**: Processing status and error messages
+- **Zero Cost**: Runs entirely on Free Tiers (Vercel + Google AI Studio).
+- **Massive Scale**: Designed for 10k+ saplings.
+- **Deep Tech**: Combines Classical CV (SIFT/Hough) with Modern GenAI (Transformers).
 
 ---
 
-## 📝 License
-
-MIT License - Free for academic and commercial use
+## 📁 Project Structure
+```
+EcoDrone-AI/
+├── backend/
+│   ├── app/
+│   │   ├── main.py           # FastAPI + Gemini Integration
+│   │   └── ml/
+│   │       ├── classifier.py # Hybrid (Gemini + Heuristic) Logic
+│   │       └── ...
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Dashboard.jsx # "Super" Dashboard
+│   │   │   └── ...
+│   └── ...
+├── vercel.json               # Optimized Cloud Config
+└── README.md
+```
 
 ---
 
-## 👨‍💻 Author
-
-**Soumoditya Das**  
-Email: soumoditt@gmail.com  
-Hackathon: Gemini Cloud Hackathon 2026
+## 📜 License
+MIT License - Open Source
 
 ---
 
-## 🙏 Acknowledgments
-
-- Methodology inspired by DeadTrees.Earth (University of Freiburg)
-- Built with Google Gemini AI assistance
-- Deployed on Vercel
-
----
-
-**Ready to revolutionize afforestation monitoring! 🌱🚁**
+**Built with ❤️ by Soumoditya Das**

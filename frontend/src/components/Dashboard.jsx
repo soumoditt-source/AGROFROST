@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 import { Upload, Cpu, Activity, AlertTriangle } from 'lucide-react';
 import MapVisualizer from './MapVisualizer';
 
-const Dashboard = () => {
+const Dashboard = (props) => {
     const [op1File, setOp1File] = useState(null);
     const [op3File, setOp3File] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -60,12 +60,13 @@ const Dashboard = () => {
         const formData = new FormData();
         formData.append('op1_image', op1File);
         formData.append('op3_image', op3File);
+        formData.append('model_type', props.modelType || 'gemini');
 
         try {
             // Production-Ready: Using relative path for Vercel/Cloud deployment
             const response = await axios.post('/api/analyze', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
-                timeout: 60000 // 60 second timeout
+                timeout: 120000 // Extended timeout for GenAI (2 mins)
             });
 
             if (response.data.status === 'partial_error') {
@@ -135,14 +136,20 @@ const Dashboard = () => {
 
             <div style={{ textAlign: 'center', marginBottom: '40px' }}>
                 <button className="btn-primary" onClick={runAnalysis} disabled={loading} style={{ fontSize: '1.2rem', padding: '15px 40px' }}>
-                    {loading ? "Processing..." : "Analyze Patch"} <Cpu size={20} style={{ marginLeft: 10 }} />
+                    {loading ? (
+                        <span>
+                            Processing with {props.modelType === 'gemini' ? "Gemini 1.5 Pro" : "Standard Algorithm"}...
+                        </span>
+                    ) : "Analyze Patch"} <Cpu size={20} style={{ marginLeft: 10 }} />
                 </button>
             </div>
 
             {loading && (
                 <div className="loader-container">
                     <div className="loading-spinner"></div>
-                    <p style={{ marginTop: '20px', color: 'var(--primary)' }}>Aligning Images & Detecting Saplings...</p>
+                    <p style={{ marginTop: '20px', color: 'var(--primary)' }}>
+                        {props.modelType === 'gemini' ? "Sending crops to Google Gemini Vision..." : "Aligning Images & Detecting Saplings..."}
+                    </p>
                 </div>
             )}
 
@@ -171,14 +178,14 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '30px', display: 'flex', justifyContent: 'center', gap: '20px' }}>
                         <button
                             className="btn-secondary"
                             onClick={() => {
-                                const headers = "ID,X_Coordinate,Y_Coordinate,Confidence\n";
+                                const headers = "ID,X_Coordinate,Y_Coordinate,Confidence,Reason\n";
                                 const csvContent = "data:text/csv;charset=utf-8,"
                                     + headers
-                                    + result.casualties.map(c => `${c.id},${c.x},${c.y},${c.conf}`).join("\n");
+                                    + result.casualties.map(c => `${c.id},${c.x},${c.y},${c.conf},"${c.reason || 'N/A'}"`).join("\n");
                                 const encodedUri = encodeURI(csvContent);
                                 const link = document.createElement("a");
                                 link.setAttribute("href", encodedUri);
@@ -189,7 +196,32 @@ const Dashboard = () => {
                         >
                             Download Casualty CSV
                         </button>
+
+                        <button
+                            className="btn-primary"
+                            style={{ background: 'var(--secondary)', borderColor: 'var(--secondary)' }}
+                            onClick={async () => {
+                                try {
+                                    alert("Generating AI Report... This may take a few seconds.");
+                                    const res = await axios.post('/api/report', { metrics: result.metrics });
+                                    setResult(prev => ({ ...prev, ai_report: res.data.report }));
+                                } catch (e) {
+                                    alert("Failed to generate report");
+                                }
+                            }}
+                        >
+                            📝 Generate AI Field Report
+                        </button>
                     </div>
+
+                    {result.ai_report && (
+                        <div className="glass-panel" style={{ padding: '25px', marginBottom: '30px', borderLeft: '4px solid var(--secondary)' }}>
+                            <h3 style={{ color: 'var(--secondary)', marginBottom: '15px' }}>🤖 Gemini Field Report</h3>
+                            <div style={{ lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                                {result.ai_report}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="glass-panel" style={{ padding: '20px' }}>
                         <h2 style={{ marginBottom: '20px' }}>Interactive Survival Map</h2>
