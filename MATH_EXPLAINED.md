@@ -4,17 +4,19 @@ This document details the mathematical models and algorithms powering the "Ultim
 
 ---
 
-## 1. Excess Green Index (ExG)
-**Purpose**: Rapidly segment vegetation from soil/background in the "Fast Mode" heuristic analysis.
+## 1. Bio-Spectral Fusion
+**Purpose**: Advanced survival detection in "Fast Mode" heuristic analysis, moving beyond simple color thresholding.
 
-### Formula:
-$$ ExG = 2 \cdot G - R - B $$
+### Logic:
+Instead of just checking for "green", we use a multi-factor decision matrix:
+1.  **ExG Index**: Identifies vegetation based on spectral reflectance ($2 \cdot G - R - B$).
+2.  **Texture Complexity ($\sigma$)**: We calculate the Spatial Standard Deviation of the grayscale patch. Healthy saplings have high texture complexity due to leaf structure, while bare soil or dry grass is relatively uniform.
+3.  **Structural Density ($\eta$)**: We use Canny Edge Detection to calculate the density of high-contrast edges. Healthy saplings present distinct boundaries and shadows.
 
-Where $R, G, B$ are the normalized pixel values (0-1) from the drone imagery.
-*   **Logic**: Vegetation reflects significantly more Green than Red or Blue. Soil typically has higher Red/Blue components.
-*   **Thresholding**:
-    *   If $ExG > T$ (where $T \approx 25$): Classified as **Vegetation (Alive)**.
-    *   Otherwise: Classified as **Non-Vegetation (Dead/Empty)**.
+### Mathematical Fusion:
+A sapling is classified as **Alive** if:
+$$ (ExG > T_{color}) \cup (ExG > T_{low} \cap \sigma > T_{texture}) $$
+Where $T$ are empirically tuned thresholds for drone imagery at 70m elevation.
 
 ---
 

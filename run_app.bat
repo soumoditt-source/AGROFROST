@@ -29,12 +29,12 @@ if not exist "sample_op1.png" (
 
 echo [4/4] Launching Services...
 echo     - Starting FastAPI Backend on Port 8000
-start "EcoDrone Backend" cmd /k "cd backend && python -m uvicorn app.main:app --reload --port 8000"
+start "EcoDrone Backend" cmd /k "cd backend && py -3.11 -m uvicorn app.main:app --reload --port 8000"
 
 echo     - Starting React Frontend on Port 5173
 cd frontend
 call npm install
-start "EcoDrone Frontend" cmd /k "npm run dev"
+start "EcoDrone Frontend" cmd /k "npm run dev -- --port 5173"
 
 echo.
 echo ========================================================
