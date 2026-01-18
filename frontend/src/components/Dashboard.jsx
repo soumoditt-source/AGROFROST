@@ -13,6 +13,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Upload, Cpu, Activity, AlertTriangle } from 'lucide-react';
 import MapVisualizer from './MapVisualizer';
+import { benkmuraData } from '../data/benkmura_data';
 
 const Dashboard = (props) => {
     const [op1File, setOp1File] = useState(null);
@@ -95,15 +96,78 @@ const Dashboard = (props) => {
         }
     };
 
+    const loadDemo = () => {
+        setLoading(true);
+        // Simulate loading time
+        setTimeout(() => {
+            setOp1Preview('/assets/benkmura_op1.png');
+            setOp3Preview('/assets/benkmura_op3.png');
+            setOp1File(new File([""], "benkmura_op1.png")); // Dummy for validation
+            setOp3File(new File([""], "benkmura_op3.png"));
+
+            // Mock Result
+            setResult({
+                metrics: {
+                    survival_rate: 85.5,
+                    processing_time_sec: 2.1,
+                    dead_count: 120
+                },
+                raw_details: benkmuraData.boundaryPillars.map((p, index) => {
+                    // Deterministic "Real-World" simulation based on provided map data
+                    // Simulate some clusters of "dead" saplings (e.g., near index 4 and 10)
+                    const isDead = [4, 10, 11].includes(index);
+                    return {
+                        x: (p.lng - 83.818044) * 12000,
+                        y: (p.lat - 21.652007) * 12000,
+                        status: isDead ? 'dead' : 'alive',
+                        confidence: isDead ? 0.88 : 0.96,
+                        reason: isDead ? 'Dried foliage (Lack of moisture)' : null
+                    };
+                }),
+                casualties: [],
+                ai_report: `**Benkmura VF Analysis Report**\n\nProject: ${benkmuraData.projectName}\nLocation: ${benkmuraData.location}\nDetected robust growth in Sectors 1-4. \nSurvival Rate: 85.5%`
+            });
+            setLoading(false);
+        }, 1500);
+    };
+
     return (
         <div className="dashboard">
             <motion.h1
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                style={{ textAlign: 'center', marginBottom: '40px' }}
+                style={{ textAlign: 'center', marginBottom: '20px' }}
             >
                 Afforestation <span className="text-gradient">Monitor</span>
             </motion.h1>
+
+            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                <button onClick={loadDemo} className="btn-secondary" style={{ padding: '10px 20px' }}>
+                    🚀 Load Benkmura VF Demo (Hackathon Mode)
+                </button>
+            </div>
+
+            {/* Project Details (Only in Demo Mode) */}
+            {result && result.ai_report && result.ai_report.includes('Benkmura') && (
+                <div className="glass-panel" style={{ margin: '0 auto 30px', maxWidth: '800px', padding: '20px' }}>
+                    <h3 style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginBottom: '15px' }}>
+                        🌲 Project Metadata: {benkmuraData.projectName}
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '0.9rem' }}>
+                        <div>
+                            <p><strong style={{ color: 'var(--primary)' }}>Location:</strong> {benkmuraData.location}</p>
+                            <p><strong>Year:</strong> {benkmuraData.year}</p>
+                            <p><strong>Model:</strong> {benkmuraData.modelType}</p>
+                            <p><strong>Area:</strong> {benkmuraData.totalArea}</p>
+                        </div>
+                        <div>
+                            <p><strong>Seedlings:</strong> {benkmuraData.totalSeedlings}</p>
+                            <p><strong>Sectors:</strong> {benkmuraData.sectors.length}</p>
+                            <p><strong>Species:</strong> {benkmuraData.sectors[0].species.slice(0, 3).join(', ')} + more</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Input Section */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '30px' }}>

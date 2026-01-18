@@ -26,3 +26,4 @@ ENV/
 .coverage
 htmlcov/
 .vercel
+Drone image/

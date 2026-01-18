@@ -12,6 +12,13 @@
 ## 🚀 The "Super Version" Upgrade
 This is the upgraded, **production-grade** version of EcoDrone AI. It moves beyond simple heuristics to use **Generative AI** for "Human-Level" analysis.
 
+## 🌲 Benkmura VF Demo (Hackathon Special)
+This version includes a specialized demo mode for the **Benkmura VF (Ainlajharan Beat)** dataset.
+- **One-Click Demo**: Click "🚀 Load Benkmura VF Demo" to see the comprehensive evaluation of the Benkmura site.
+- **Digital Map**: Integrated GPS boundary pillars (1-14) and sector analysis based on the actual digital treatment map.
+- **AI Evaluation**: Simulated robust analysis showing ~85.5% survival rate for the Benkmura plantation.
+
+
 ### 🔥 Key Super-Features
 1.  **Gemini 1.5 Pro Vision**: Replaces standard CV logic with Google's state-of-the-art VLM to "see" and "reason" about sapling health (e.g., distinguishing dried sticks from empty holes).
 2.  **AI Field Reporter**: One-click generation of professional **Executive Summaries** for forest departments.
@@ -78,12 +85,12 @@ This project is configured for **One-Click Vercel Deployment**.
 ## 📊 Technical Methodology
 
 ### 1. Hybrid Intelligence
-- **Tier 1 (Fast)**: ExG Index + Texture Analysis for bulk processing (>90% speed).
-- **Tier 2 (Precision)**: **Gemini 1.5 Pro** prompts like *"Analyze this crop. Is the sapling alive? If dead, explain why."* for ambiguity resolution and sampling.
+- **Tier 1 (Fast)**: ExG Index + Texture Analysis for bulk processing (>90% speed). [See Math Explained](MATH_EXPLAINED.md)
+- **Tier 2 (Precision)**: **Gemini 1.5 Pro** prompts for ambiguity resolution.
 
 ### 2. Auto-Reporting
-- The system aggregates statistics (Survival %, Dead Count) and uses **Gemini Text** to write a contextual report:
-  > *"The patch shows an 82% survival rate. Recommended action: Manual replanting in the North-East sector where 15 casualties were clustered..."*
+- The system aggregates statistics and uses **Gemini Text** to write a contextual report.
+
 
 ---
 
