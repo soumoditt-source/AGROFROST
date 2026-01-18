@@ -1,6 +1,7 @@
 # 🌳 EcoDrone AI - "Super Version"
 
 **The Ultimate Afforestation Monitoring System**  
+![Status](https://img.shields.io/badge/Status-Ultimate%20v1.0-brightgreen)
 **Powered by Google Gemini 1.5 Pro & Vercel**
 
 **Hackathon**: Gemini Cloud Hackathon | Kshitij 2026  
