@@ -138,7 +138,7 @@ const Dashboard = (props) => {
                 animate={{ opacity: 1, y: 0 }}
                 style={{ textAlign: 'center', marginBottom: '20px' }}
             >
-                Afforestation <span className="text-gradient">Monitor</span>
+                Afforestation <span className="text-gradient">Monitor</span> <span style={{ fontSize: '0.8rem', opacity: 0.6, marginLeft: '10px', padding: '2px 8px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px' }}>v1.0</span>
             </motion.h1>
 
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
