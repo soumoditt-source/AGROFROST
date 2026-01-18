@@ -38,11 +38,11 @@ Monitor 10,000+ saplings across 6.25 hectares using drone imagery to calculate s
 
 ## 🏗️ Architecture
 
-### Backend (Python + FastAPI)
+### EcoDrone AI Neural Engine (Python Core)
 - **🧠 Generative Core**: `Gemini 1.5 Pro` for visual analysis and report writing.
 - **👁️ Pit Detection**: Adaptive Hough Circle Transform.
 - **📍 Registration**: SIFT + RANSAC for sub-meter alignment.
-- **⚡ API**: FastAPI with optimized `/report` endpoint.
+- **⚡ Execution**: High-concurrency async architecture with optimized `/report` endpoint.
 
 ### Frontend (React + Vite)
 - **📊 Super Dashboard**: Glassmorphism UI with "Gemini vs Fast" model selector.
