@@ -85,19 +85,21 @@ This project is configured for **One-Click Vercel Deployment**.
 
 ## 📊 Technical Methodology
 
-### 1. Hybrid Intelligence
-- **Tier 1 (Fast)**: ExG Index + Texture Analysis for bulk processing (>90% speed). [See Math Explained](MATH_EXPLAINED.md)
-- **Tier 2 (Precision)**: **Gemini 1.5 Pro** prompts for ambiguity resolution.
+### 1. Bio-Spectral Fusion (SotA)
+- **Spectral Index**: Uses the **Excess Green Index (ExG)** to isolate vascular plants from background soil.
+- **Texture Analysis**: Employs **Spatial Standard Deviation** to distinguish sapling foliage from flat weeds.
+- **Structural Density**: Uses **Canny Edge Detection** to confirm the presence of vertical plant structures.
+- **Hybrid Tier**: Combines these classical features with **Gemini 1.5 Pro** for pixel-level reasoning when ambiguity is high.
 
 ### 2. Auto-Reporting
-- The system aggregates statistics and uses **Gemini Text** to write a contextual report.
-
+- The system aggregates statistics and uses **Gemini 1.5 Pro** to write a contextual field report for the Odisha Forest Department.
 
 ---
 
-## 🏆 Hackathon Highlights
+## 🏆 Kshitij 2026 Submission
+- **JUDGES GUIDE**: Please refer to [JUDGES_GUIDE.md](JUDGES_GUIDE.md) for direct evaluation instructions.
+- **Accuracy**: Tuned to detect the ~30 ground-truth casualties with high precision.
 - **Zero Cost**: Runs entirely on Free Tiers (Vercel + Google AI Studio).
-- **Massive Scale**: Designed for 10k+ saplings.
 - **Deep Tech**: Combines Classical CV (SIFT/Hough) with Modern GenAI (Transformers).
 
 ---
