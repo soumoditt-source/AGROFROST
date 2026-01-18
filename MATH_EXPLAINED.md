@@ -63,7 +63,21 @@ Instead of a mathematical formula, we use a **Probabilistic Transformer Model**.
 
 ---
 
+---
+
+## 5. Forestry Density Models
+EcoDrone AI is programmed to support the Odisha Forest Department's standard models:
+*   **ANR 200/500**: Used in canopy densities of 40-70%.
+*   **AR 1000**: Used in canopy densities of 10-40%.
+*   **AR 1600 (Benkmura Case)**: Used in bald patches (0-10% canopy). 
+    *   **Spacing Math**: At 1600 saplings/Ha, spacing is approx $2.5m \times 2.5m$.
+    *   **Automation**: Our circle detector uses a `minDist` parameter calculated as $2.5m / GSD$ to prevent overlapping detections and ensure accurate AR 1600 auditing.
+
+---
+
 **Summary**:
 *   ExG + Hough = **Speed** ($O(N)$ complexity).
 *   Gemini 1.5 Pro = **Intelligence** (High-dimensional semantic understanding).
+*   **AR 1600 Optimized**: Specifically tuned for the Benkmura VF dataset.
 *   **Combined**: The "Ultimate" Architecture.
+
