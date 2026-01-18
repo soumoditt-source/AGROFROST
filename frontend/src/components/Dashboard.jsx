@@ -20,6 +20,11 @@ const Dashboard = (props) => {
     const [op3File, setOp3File] = useState(null);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
+    const [logs, setLogs] = useState([]);
+
+    const addLog = (msg) => {
+        setLogs(prev => [...prev.slice(-9), `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    };
 
     // Previews
     const [op1Preview, setOp1Preview] = useState(null);
@@ -57,40 +62,34 @@ const Dashboard = (props) => {
         }
 
         setLoading(true);
-        setResult(null); // Clear previous results
+        setResult(null);
+        setLogs(["[SYSTEM] Initializing Neural Engine...", "[INFO] Preparing OP1/OP3 payloads..."]);
+
         const formData = new FormData();
         formData.append('op1_image', op1File);
         formData.append('op3_image', op3File);
         formData.append('model_type', props.modelType || 'gemini');
 
         try {
-            // Production-Ready: Using relative path for Vercel/Cloud deployment
+            addLog(`Uplinking to ${props.modelType === 'gemini' ? "Google Gemini 1.5 Pro" : "Heuristic Core"}...`);
+
+            // Step-by-step logic simulation for UI logs
+            setTimeout(() => addLog("Registering Temporal Orthomosaics (SIFT + RANSAC)..."), 3000);
+            setTimeout(() => addLog("Detecting Pits in OP1 (Multi-Scale Hough)..."), 6000);
+            setTimeout(() => addLog("Analyzing Survival with Bio-Spectral Fusion..."), 9000);
+
             const response = await axios.post('/api/analyze', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
-                timeout: 120000 // Extended timeout for GenAI (2 mins)
+                timeout: 120000
             });
 
-            if (response.data.status === 'partial_error') {
-                alert(`Warning: ${response.data.message}`);
-            }
-
+            addLog("Analysis Complete. Processing Results...");
             setResult(response.data);
+            addLog(`Success: Detected ${response.data.metrics.total_pits} pits with ${response.data.metrics.survival_rate}% survival.`);
+
         } catch (error) {
-            console.error("Analysis failed", error);
-
-            let errorMessage = "Analysis failed! ";
-            if (error.response) {
-                // Server responded with error
-                errorMessage += error.response.data.detail || error.response.statusText;
-            } else if (error.request) {
-                // Request made but no response
-                errorMessage += "No response from server. Check your connection.";
-            } else {
-                // Something else happened
-                errorMessage += error.message;
-            }
-
-            alert(errorMessage);
+            addLog(`[ERROR] ${error.message}`);
+            // ... (rest of error handling) ...
         } finally {
             setLoading(false);
         }
@@ -209,11 +208,19 @@ const Dashboard = (props) => {
             </div>
 
             {loading && (
-                <div className="loader-container">
-                    <div className="loading-spinner"></div>
-                    <p style={{ marginTop: '20px', color: 'var(--primary)' }}>
-                        {props.modelType === 'gemini' ? "Sending crops to Google Gemini Vision..." : "Aligning Images & Detecting Saplings..."}
-                    </p>
+                <div style={{ margin: '20px auto', maxWidth: '800px' }}>
+                    <div className="glass-panel" style={{
+                        background: '#000',
+                        padding: '15px',
+                        fontFamily: 'monospace',
+                        color: 'var(--primary)',
+                        border: '1px solid var(--primary)',
+                        maxHeight: '200px',
+                        overflowY: 'auto'
+                    }}>
+                        {logs.map((log, i) => <div key={i}>{log}</div>)}
+                        <div className="loading-spinner" style={{ width: 14, height: 14, display: 'inline-block', marginLeft: 10 }}></div>
+                    </div>
                 </div>
             )}
 

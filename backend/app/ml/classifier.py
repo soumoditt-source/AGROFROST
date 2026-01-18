@@ -97,26 +97,43 @@ class SurvivalClassifier:
         return self._heuristic_analysis(pil_image)
 
     def _heuristic_analysis(self, pil_image):
-        """Original heuristic logic as fallback."""
+        """
+        Advanced Bio-Spectral Fusion (ExG + Texture + Structural Density).
+        Optimized for sapling survival detection in Year 1-3.
+        """
         patch_np = np.array(pil_image)
-        
         if patch_np.size == 0: 
-            return "dead", 0.0, "Empty Image"
+            return "dead", 0.0, "Empty Patch"
 
+        # 1. Spectral Analysis (Excess Green Index)
+        # Convert to float for calculation
         r, g, b = patch_np[:,:,0].astype(float), patch_np[:,:,1].astype(float), patch_np[:,:,2].astype(float)
-        
-        # Excess Green Index: 2G - R - B
         exg = 2.0 * g - r - b
         mean_exg = np.mean(exg)
-        std_dev = np.std(patch_np)
         
-        if mean_exg > 25: 
-            return "alive", 0.92, "High Green Index"
-        elif mean_exg > 15 and std_dev > 30:
-            return "alive", 0.75, "Moderate Green + Texture"
+        # 2. Texture Complexity (Spatial Variation)
+        gray = cv2.cvtColor(patch_np, cv2.COLOR_RGB2GRAY)
+        std_dev = np.std(gray)
+        
+        # 3. Structural Density (Edge Detection)
+        # Healthy saplings have distinct leaf edges/shadows
+        edges = cv2.Canny(gray, 50, 150)
+        edge_density = np.mean(edges > 0)
+        
+        # Decision Matrix (Multi-Factor Fusion)
+        if mean_exg > 22 and edge_density > 0.02:
+            conf = min(0.95, 0.7 + (mean_exg / 100.0) + edge_density)
+            return "alive", conf, "High Bio-Spectral Signature"
+        elif mean_exg > 15 and std_dev > 35:
+            return "alive", 0.82, "Texture-Dominant Growth"
+        elif mean_exg < 5 and edge_density < 0.005:
+            return "dead", 0.94, "Bare Soil Detected (Low Indices)"
         else:
-            conf = 1.0 - (mean_exg / 50.0)
-            return "dead", min(max(conf, 0.5), 0.95), "Low Green/Texture"
+            # Ambiguous case - look at ExG primarily
+            if mean_exg > 10:
+                return "alive", 0.65, "Weak Vegetation Signal"
+            else:
+                return "dead", 0.75, "High Probability Casualty"
 
 
 def analyze_survival_at_pits(op3_image_input, pit_locations, gsd_cm_px=2.5, use_gemini=True):
@@ -141,7 +158,6 @@ def analyze_survival_at_pits(op3_image_input, pit_locations, gsd_cm_px=2.5, use_
     results = []
     crop_size = int(100 / gsd_cm_px) # 1m box
     half_crop = crop_size // 2
-    h, w, _ = image_op3.shape
     
     # --- ADVANCED PIT DETECTION (Hough Circle Transform) ---
     detected_pits = _detect_circles(image_op3, gsd_cm_px)
@@ -167,14 +183,13 @@ def analyze_survival_at_pits(op3_image_input, pit_locations, gsd_cm_px=2.5, use_
 
 def _process_pits(classifier, mode, image, pits, half_crop):
     """
-    Helper to process the batch of pits (reduces nesting complexity).
+    Helper to process the batch of pits.
     """
     gemini_limit = 15 
     processed_with_gemini = 0
     dead_count = 0
     results = []
     
-    h, w, _ = image.shape
     total_pits = len(pits)
     print(f"[INFO] Analyzing {total_pits} pits...")
     
@@ -182,42 +197,37 @@ def _process_pits(classifier, mode, image, pits, half_crop):
         cx, cy = pit['x'], pit['y']
         
         # Boundary checks
+        h, w, _ = image.shape
         x1, y1 = max(0, cx - half_crop), max(0, cy - half_crop)
         x2, y2 = min(w, cx + half_crop), min(h, cy + half_crop)
         
         patch = image[y1:y2, x1:x2]
         
-        # Decide Strategy
-        use_gemini = False
-        if mode == "gemini" and processed_with_gemini < gemini_limit:
-            use_gemini = True
-            processed_with_gemini += 1
-            if processed_with_gemini % 2 == 0:
-                time.sleep(1) # Simple rate limit check
-        
-        # Predict
+        # Decide Strategy (Simple Rate limiting)
+        use_gemini = (mode == "gemini" and processed_with_gemini < gemini_limit)
         if use_gemini:
-             status, conf, reason = classifier.predict(patch)
-        else:
-             rgb_patch = cv2.cvtColor(patch, cv2.COLOR_BGR2RGB)
-             status, conf, reason = classifier._heuristic_analysis(Image.fromarray(rgb_patch))
-             if mode == "gemini": reason += " (Fast Mode)"
+            processed_with_gemini += 1
+            if processed_with_gemini % 2 == 0: time.sleep(0.5)
+        
+        status, conf, reason = _get_prediction(classifier, patch, use_gemini)
+        if mode == "gemini" and not use_gemini: reason += " (Fast Mode)"
 
         if status == "dead":
             dead_count += 1
             
-        results.append({
-            "id": i,
-            "x": cx, "y": cy,
-            "status": status,
-            "confidence": round(conf, 2),
-            "reason": reason
-        })
+        results.append({"id": i, "x": cx, "y": cy, "status": status, "confidence": round(conf, 2), "reason": reason})
         
-        if i % 10 == 0:
-            print(f"Processed {i}/{total_pits}...")
+        if i % 10 == 0: print(f"Processed {i}/{total_pits}...")
             
     return results, dead_count
+
+def _get_prediction(classifier, patch, use_gemini):
+    """Encapsulates prediction logic to reduce complexity."""
+    if use_gemini:
+        return classifier.predict(patch)
+    else:
+        rgb_patch = cv2.cvtColor(patch, cv2.COLOR_BGR2RGB)
+        return classifier._heuristic_analysis(Image.fromarray(rgb_patch))
 
 def _detect_circles(image, gsd_cm_px):
     """Helper to detect circles using Hough Transform."""
