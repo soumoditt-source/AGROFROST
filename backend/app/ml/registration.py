@@ -21,12 +21,33 @@ def register_images(img1_bytes, img2_bytes):
         print("[ERROR] Failed to decode images in color mode")
         return None
 
-    # 2. Convert to grayscale for SIFT feature detection only
-    img1_gray = cv2.cvtColor(img1_color, cv2.COLOR_BGR2GRAY)
-    img2_gray = cv2.cvtColor(img2_color, cv2.COLOR_BGR2GRAY)
+    # 2. Optimized Processing for Large Maps
+    # If imagery is massive (e.g. > 10MB or > 4000px), we downsample for SIFT speed/memory,
+    # but apply the resulting homography to the full resolution or a high-res proxy.
+    max_dim = 4000
+    h1, w1 = img1_color.shape[:2]
+    h2, w2 = img2_color.shape[:2]
+    
+    scale1 = 1.0
+    if max(h1, w1) > max_dim:
+        scale1 = max_dim / float(max(h1, w1))
+        img1_proc = cv2.resize(img1_color, (0,0), fx=scale1, fy=scale1)
+    else:
+        img1_proc = img1_color
 
-    # 3. SIFT Detector (Enhanced Feature Sensitivity)
-    sift = cv2.SIFT_create(nfeatures=5000) # Increased for high-res drone maps
+    scale2 = 1.0
+    if max(h2, w2) > max_dim:
+        scale2 = max_dim / float(max(h2, w2))
+        img2_proc = cv2.resize(img2_color, (0,0), fx=scale2, fy=scale2)
+    else:
+        img2_proc = img2_color
+
+    # 3. Convert to grayscale for SIFT feature detection
+    img1_gray = cv2.cvtColor(img1_proc, cv2.COLOR_BGR2GRAY)
+    img2_gray = cv2.cvtColor(img2_proc, cv2.COLOR_BGR2GRAY)
+
+    # 4. SIFT Detector (Enhanced Feature Sensitivity + Limit)
+    sift = cv2.SIFT_create(nfeatures=8000) 
     kp1, des1 = sift.detectAndCompute(img1_gray, None)
     kp2, des2 = sift.detectAndCompute(img2_gray, None)
 
@@ -34,50 +55,40 @@ def register_images(img1_bytes, img2_bytes):
         print("[ERROR] Failed to detect features in images")
         return None
 
-    # 4. Match Features (FLANN based Matcher)
-    # ---------------------------------------
-    # We use a Fast Library for Approximate Nearest Neighbors to find
-    # similar keypoints between Year 1 (OP1) and Year X (OP3).
+    # 5. Match Features (FLANN based Matcher)
     FLANN_INDEX_KDTREE = 1
     index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-    search_params = dict(checks=50) # Higher checks = more precision, slower
+    search_params = dict(checks=50) 
     flann = cv2.FlannBasedMatcher(index_params, search_params)
     
     matches = flann.knnMatch(des1, des2, k=2)
 
-    # 5. Filter Good Matches (Lowe's Ratio Test)
-    # ------------------------------------------
-    # Discard ambiguous matches. If the best match is not significantly
-    # better than the 2nd best, it's noise.
+    # 6. Filter Good Matches (Lowe's Ratio Test)
     good = []
     for m, n in matches:
         if m.distance < 0.7 * n.distance:
             good.append(m)
 
-    print(f"[INFO] Found {len(good)} good matches out of {len(matches)} total")
+    print(f"[INFO] Found {len(good)} good matches")
 
-    if len(good) > 10:
-        # We need at least 4 points for Homography, but 10 is safe.
-        src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-        dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
+    if len(good) > 15:
+        # Rescale keypoints back to original img1/img2 coordinates if we resized
+        src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2) / scale1
+        dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2) / scale2
 
-        # 6. Find Homography (RANSAC)
-        # ---------------------------
-        # Calculate the perspective transformation matrix that maps OP3 onto OP1.
-        # RANSAC ignores outliers (bad matches).
-        M, mask = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5.0)
+        # 7. Find Homography (RANSAC)
+        M, _ = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5.0)
         
         if M is None:
             print("[ERROR] Failed to compute homography matrix")
             return None
         
-        # 7. Warp COLOR img2 to match img1
-        # CRITICAL: Apply transformation to the COLOR image, not grayscale
-        h, w = img1_color.shape[:2]
-        warped_img2_color = cv2.warpPerspective(img2_color, M, (w, h))
+        # 8. Warp COLOR img2 to match original img1 dimensions
+        # We warp the ORIGINAL color image to avoid quality loss
+        warped_img2_color = cv2.warpPerspective(img2_color, M, (w1, h1))
         
-        print(f"[SUCCESS] Registration complete. Output shape: {warped_img2_color.shape}")
+        print(f"[SUCCESS] Registration complete. Final Shape: {warped_img2_color.shape}")
         return warped_img2_color
     else:
-        print(f"[WARNING] Not enough matches found - {len(good)}/10. Skipping registration.")
+        print(f"[WARNING] Insufficient matches ({len(good)}/15). Using raw alignment.")
         return None

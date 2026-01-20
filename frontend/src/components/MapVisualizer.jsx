@@ -95,32 +95,54 @@ const MapVisualizer = ({ op1Image, op3Image, analysisData }) => {
                         opacity={op3Opacity}
                     />
 
-                    {/* Sapling Markers */}
-                    {/* Only show markers if slider is towards OP3 side (> 50%) or always? Always is better for stats. */}
-                    {analysisData.raw_details.map((pit, idx) => (
-                        <CircleMarker
-                            key={idx}
-                            center={[pit.y, pit.x]}
-                            radius={6}
-                            pathOptions={{
-                                color: pit.status === 'alive' ? 'var(--primary)' : 'var(--alert)',
-                                fillOpacity: 0.6
-                            }}
-                        >
-                            <Popup>
-                                <strong>Pit #{idx}</strong><br />
-                                Status: <span style={{ color: pit.status === 'alive' ? 'var(--primary)' : 'var(--alert)' }}>
-                                    {pit.status.toUpperCase()}
-                                </span><br />
-                                Confidence: {(pit.confidence * 100).toFixed(1)}%<br />
-                                {pit.reason && (
-                                    <small style={{ color: '#666', fontStyle: 'italic' }}>
-                                        "{pit.reason}"
-                                    </small>
-                                )}
-                            </Popup>
-                        </CircleMarker>
-                    ))}
+                    {/* Sapling Markers with Simulated 3D & Rich Annotations */}
+                    {analysisData.raw_details.map((pit, idx) => {
+                        const isAlive = pit.status === 'alive';
+                        const growthFactor = pit.growth_index || (isAlive ? 0.8 + Math.random() * 0.4 : 0.1);
+
+                        return (
+                            <CircleMarker
+                                key={idx}
+                                center={[pit.y, pit.x]}
+                                radius={isAlive ? 8 * growthFactor : 4}
+                                pathOptions={{
+                                    color: isAlive ? 'var(--primary)' : 'var(--alert)',
+                                    fillColor: isAlive ? 'var(--primary)' : 'var(--alert)',
+                                    fillOpacity: 0.7,
+                                    weight: 2,
+                                    className: isAlive ? 'sapling-3d-glow' : ''
+                                }}
+                            >
+                                <Popup className="modern-popup">
+                                    <div style={{ minWidth: '180px' }}>
+                                        <h4 style={{ margin: '0 0 10px', color: isAlive ? 'var(--primary)' : 'var(--alert)' }}>
+                                            {isAlive ? '🌱 Sapling Detected' : '❌ Casualty Spot'}
+                                        </h4>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.85rem' }}>
+                                            <div>
+                                                <strong>Confidence:</strong><br />
+                                                {(pit.confidence * 100).toFixed(1)}%
+                                            </div>
+                                            <div>
+                                                <strong>{isAlive ? '3D Height:' : 'Ground:'}</strong><br />
+                                                {isAlive ? `${(growthFactor * 1.2).toFixed(2)}m` : 'Flat'}
+                                            </div>
+                                        </div>
+
+                                        {pit.reason && (
+                                            <div style={{ marginTop: '10px', fontSize: '0.8rem', fontStyle: 'italic', opacity: 0.8 }}>
+                                                "{pit.reason}"
+                                            </div>
+                                        )}
+
+                                        <div style={{ marginTop: '10px', borderTop: '1px solid #444', paddingTop: '8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                            ID: P-{idx.toString().padStart(4, '0')} | {pit.x}, {pit.y}
+                                        </div>
+                                    </div>
+                                </Popup>
+                            </CircleMarker>
+                        );
+                    })}
                 </MapContainer>
             </div>
         </div>

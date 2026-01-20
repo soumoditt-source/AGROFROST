@@ -59,17 +59,21 @@ class SurvivalClassifier:
             try:
                 # Construct the prompt
                 prompt = """
-                Analyze this drone image crop of a reforestation pit (approx 1m width).
-                Determine if there is a LIVING sapling/tree in the center or if it is DEAD/EMPTY.
-                Look for:
-                - Green leaves or foliage (Alive)
-                - distinct plant structure (Alive)
-                - Dried brown sticks, empty soil, or just holes (Dead)
+                Analyze this high-resolution drone image crop of a reforestation pit (approx 1m Ground Sampling Distance).
+                
+                DETERMINE if there is a LIVING sapling/tree in the center or if it is DEAD/EMPTY.
+                
+                REASONING (3D & 2D):
+                - Look for green pigments (2D Spectral).
+                - Identify 3D STRUCTURAL indicators: does the plant cast a shadow? Is there a clearly defined central stem or crown structure indicating height?
+                - Distinguish from flat grass/weeds: trees have verticality and unique shadow patterns.
+                - Dead signs: Dried sticks (white/brown), empty hole with uniform soil, or clearly withered foliage.
                 
                 Return a JSON object with:
                 - "status": "alive" or "dead"
-                - "confidence": float between 0.0 and 1.0
-                - "reason": short explanation (max 10 words)
+                - "confidence": float (0.0 to 1.0)
+                - "3d_confidence": float (0.0 to 1.0) based on verticality/shadow indicators
+                - "reason": professional evaluation (max 15 words)
                 """
                 
                 # Call Gemini API
@@ -223,6 +227,9 @@ def _process_pits(classifier, mode, image, pits, half_crop):
 
 def _get_prediction(classifier, patch, use_gemini):
     """Encapsulates prediction logic to reduce complexity."""
+    if patch.size == 0:
+        return "dead", 0.0, "Empty Patch"
+        
     if use_gemini:
         return classifier.predict(patch)
     else:

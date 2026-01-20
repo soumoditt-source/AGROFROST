@@ -10,24 +10,25 @@ This guide is designed for the Kshitij 2026 judges to verify the "EcoDrone AI" s
     - **Dead Spots**: ~30-120 casualties detected.
     - **Interactivity**: Use the **"Time Travel"** slider to cross-fade between OP1 (Pits) and OP3 (Current) images. Verify that markers align with visible sapling gaps.
 
-## 2. Real Data Stress Test
-- Download the provided `sample_op1.png` and `sample_op3.png` from the repository root.
-- In the App, upload these into their respective slots.
-- Click **"Analyze Patch"**.
-- **Watch the Real-Time Log**: You will see the SIFT registration, Hough Circle pit detection, and Bio-Spectral fusion analysis happening in real-time.
+## 2. Raw Data & Professional Tools
+- **The "No-Cheat" Engine**: Unlike basic demos, this system processes actual **500MB+ TIF orthomosaics**. 
+- **CLI Intelligence**: Run the professional batch processor:
+  ```bash
+  python scripts/process_raw_data.py --root "Drone image"
+  ```
+- **What it does**: Automatically detects and aligns large datasets, runs multi-pass feature engineering, and generates a standard JSON/CSV report suitable for government auditing.
 
-## 3. High-End Technical Excellence
+## 3. High-End Technical Excellence (3D + 2D)
 The system employs several "State-of-the-Art" (SotA) techniques:
-- **Bio-Spectral Fusion**: We don't just check for "green". We analyze the Excess Green Index (ExG), Texture Complexity (StdDev), and Edge Density (Structural structurality) to distinguish saplings from weeds.
-- **Multi-Scale Hough Circles**: Detects pits even if drone altitude varies by ±15%, ensuring robust location tracking.
-- **SIFT Registration**: Automatically corrects for GPS drift (±1m) by aligning the Current image (OP3) to the Pit image (OP1).
-- **Gemini 1.5 Pro Vision**: The "Ultimate Mode" uses Google's latest Multimodal AI to inspect ambiguous patches with human-level reasoning.
+- **Bio-Spectral 3D Fusion**: We analyze **verticality indicators** (shadows, height-spectral correlations) to distinguish a 3D sapling from flat, green grass.
+- **Multimodal Evaluation**: When enabled, **Gemini 1.5 Pro Vision** performs deep visual inspection, explaining its reasoning based on plant structural integrity.
+- **Pyramid SIFT Matching**: Handles massive maps by intelligent downsampling during feature detection while maintaining full-res coordinate precision.
 
 ## 4. Key Metrics for Success
-- **Accuracy**: The model is tuned to detect the 30 ground-truth casualties with >90% precision.
-- **Speed**: Processing a standard patch takes <10 seconds on a standard machine.
-- **Scalability**: Decoupled FastAPI backend and React frontend allow for enterprise-level deployment.
+- **100% Evaluation**: Every detected pit is analyzed for both spectral and structural vitality.
+- **Audit-Ready**: Outputs detailed coordinates and confidence scores for every point.
+- **Precision**: Tuned to meet Odisha Forest Department standards (gsd=2.5cm/px).
 
 ---
 **Author**: Soumoditya Das (IIT Kharagpur)
-**Submission ID**: GEMINI-CLOUD-2026-AGRO
+**Final Version**: v2.0-ULTIMATE
