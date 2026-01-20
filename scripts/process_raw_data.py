@@ -20,6 +20,9 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeEl
 from rich.table import Table
 from rich.panel import Panel
 
+# Increase OpenCV pixel limit for large drone orthomosaics
+os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = str(2**32)
+
 # Add backend to path
 sys.path.append(str(Path(__file__).parent.parent))
 from backend.app.ml.pit_detector import detect_pits
@@ -52,6 +55,7 @@ def process_folder(folder_path, gsd=2.5, use_gemini=False):
     console.print(f"  [cyan]OP3 (Analysis):[/cyan] {op3_path.name}")
 
     # 2. Pipeline Execution
+    import gc
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -66,26 +70,36 @@ def process_folder(folder_path, gsd=2.5, use_gemini=False):
         img3_bytes = op3_path.read_bytes()
         progress.update(task_load, completed=100)
         
-        # Registration
-        task_reg = progress.add_task("[blue]Aligning Temporal Data...", total=100)
-        # Using the actual logic from registration.py
-        registered_img3 = register_images(img1_bytes, img3_bytes)
-        progress.update(task_reg, completed=100)
-        
-        # Detection
+        # Detection (Done first on OP1)
         task_det = progress.add_task("[green]Identifying Sample Pits...", total=100)
         pits = detect_pits(img1_bytes, gsd_cm_px=gsd)
         progress.update(task_det, completed=100)
         
+        # Registration (Align OP3 to OP1)
+        task_reg = progress.add_task("[blue]Aligning Temporal Data...", total=100)
+        registered_img3 = register_images(img1_bytes, img3_bytes)
+        
+        # Clear large raw bytes to free ~600MB
+        del img1_bytes
+        del img3_bytes
+        gc.collect()
+        
+        progress.update(task_reg, completed=100)
+        
         # Classification
         task_class = progress.add_task("[magenta]Evaluating Bio-Vitality...", total=len(pits))
-        # Note: analyze_survival handles the batching/mapping internally
         stats = analyze_survival_at_pits(
-            registered_img3 if registered_img3 is not None else img3_bytes,
+            registered_img3 if registered_img3 is not None else op3_path.read_bytes(),
             pits,
             gsd_cm_px=gsd,
             use_gemini=use_gemini
         )
+        
+        # Cleanup final large results
+        if registered_img3 is not None:
+            del registered_img3
+        gc.collect()
+        
         progress.update(task_class, completed=len(pits))
 
     # 3. Report Generation

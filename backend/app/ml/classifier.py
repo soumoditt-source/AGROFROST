@@ -197,13 +197,27 @@ def _process_pits(classifier, mode, image, pits, half_crop):
     total_pits = len(pits)
     print(f"[INFO] Analyzing {total_pits} pits...")
     
+    # Detect coordinate scaling
+    max_x = max([p['x'] for p in pits]) if pits else 0
+    max_y = max([p['y'] for p in pits]) if pits else 0
+    h, w, _ = image.shape
+    
+    scale_x = w / max_x if max_x > w else 1.0
+    scale_y = h / max_y if max_y > h else 1.0
+    
+    # Use the minimum scale to be conservative
+    scale = min(scale_x, scale_y)
+    if scale < 0.95:
+        print(f"[INFO] Auto-scaling coordinates by {scale:.4f} to match image resolution ({w}x{h})")
+    
+    current_half_crop = int(half_crop * scale)
+    
     for i, pit in enumerate(pits):
-        cx, cy = pit['x'], pit['y']
+        cx, cy = int(pit['x'] * scale), int(pit['y'] * scale)
         
         # Boundary checks
-        h, w, _ = image.shape
-        x1, y1 = max(0, cx - half_crop), max(0, cy - half_crop)
-        x2, y2 = min(w, cx + half_crop), min(h, cy + half_crop)
+        x1, y1 = max(0, cx - current_half_crop), max(0, cy - current_half_crop)
+        x2, y2 = min(w, cx + current_half_crop), min(h, cy + current_half_crop)
         
         patch = image[y1:y2, x1:x2]
         

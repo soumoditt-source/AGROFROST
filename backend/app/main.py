@@ -6,8 +6,11 @@ from app.ml.registration import register_images
 import cv2
 import numpy as np
 import io
-import os
 from dotenv import load_dotenv
+import os
+
+# Increase OpenCV pixel limit for large drone orthomosaics
+os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = str(2**32)
 
 # Load environment variables from .env file (for local dev)
 load_dotenv()
