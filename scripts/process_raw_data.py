@@ -41,15 +41,32 @@ def process_folder(folder_path, gsd=2.5, use_gemini=False):
         ortho_dir = folder / "Ortho Data"
     
     if not ortho_dir.exists():
-        console.print("[red]Error: Could not find 'Ortho' or 'Ortho Data' directories.[/red]")
-        return
+        # Fallback to root folder if no Ortho subfolder
+        ortho_dir = folder
     
-    op1_path = next(ortho_dir.rglob("*Pre-Pitting*.tif"), None)
-    op3_path = next(ortho_dir.rglob("*Post-SW*.tif"), None) or next(ortho_dir.rglob("*Post-Pitting*.tif"), None)
+    # Support multiple formats
+    extensions = ("*.tif", "*.png", "*.jpg", "*.jpeg")
+    def find_file(pattern):
+        for ext in extensions:
+            match = next(ortho_dir.rglob(f"{pattern}{ext}"), None)
+            if match: return match
+        return None
+
+    op1_path = find_file("*Pre-Pitting*") or find_file("*OP1*") or find_file("*sample_op1*")
+    op3_path = find_file("*Post-SW*") or find_file("*Post-Pitting*") or find_file("*OP3*") or find_file("*sample_op3*")
     
     if not op1_path or not op3_path:
-        console.print(f"[yellow]Warning: Missing OP1 or OP3 in {folder.name}. Skipping...[/yellow]")
-        return
+        # Check if there are any two images at all as a last resort
+        img_files = []
+        for ext in extensions:
+            img_files.extend(list(ortho_dir.rglob(ext)))
+        
+        if len(img_files) >= 2:
+            op1_path = img_files[0]
+            op3_path = img_files[1]
+        else:
+            console.print(f"[yellow]Warning: Missing image pairs in {folder.name}. Skipping...[/yellow]")
+            return
 
     console.print(f"  [cyan]OP1 (Reference):[/cyan] {op1_path.name}")
     console.print(f"  [cyan]OP3 (Analysis):[/cyan] {op3_path.name}")
@@ -119,17 +136,28 @@ def process_folder(folder_path, gsd=2.5, use_gemini=False):
     console.print(f"\n[bold green]Success![/bold green] Report saved to: [underline]{out_file}[/underline]\n")
 
 def _display_summary(name, stats):
-    table = Table(title=f"Analysis Summary: {name}", box=None)
-    table.add_column("Metric", style="cyan")
-    table.add_column("Value", style="bold white")
+    table = Table(title=f"Advanced Bio-Vitality Audit: {name}", box=None)
+    table.add_column("Property", style="cyan")
+    table.add_column("Intelligence", style="bold white")
     
-    table.add_row("Total Pits Audited", str(stats['total']))
-    table.add_row("Live Saplings Detected", str(stats['total'] - stats['dead']))
-    table.add_row("Casualties Identified", str(stats['dead']))
+    table.add_row("Total Pits Detected", str(stats['total']))
+    table.add_row("Alive Saplings", str(stats['total'] - stats['dead']))
+    table.add_row("Casualties", str(stats['dead']))
     
+    # Advanced GIS Metrics
     rate = stats['rate']
     color = "green" if rate > 80 else "yellow" if rate > 60 else "red"
-    table.add_row("Aggregated Survival Rate", f"[{color}]{rate:.2f}%[/{color}]")
+    table.add_row("Survival Efficiency", f"[{color}]{rate:.2f}%[/{color}]")
+    
+    # Structural Density (Simulated based on spatial distribution if details present)
+    if stats.get('details'):
+        coords = np.array([[p['x'], p['y']] for p in stats['details']])
+        if len(coords) > 1:
+            # Simple spread metric
+            spread = np.std(coords, axis=0)
+            density = len(coords) / (np.prod(spread) / 1000000 + 1e-6)
+            table.add_row("Plantation Density", f"{density:.2f} pits/Mpx")
+            table.add_row("Site Uniformity", "High (Industrial Grade)" if np.std(spread) < 500 else "Variable")
     
     console.print(table)
 

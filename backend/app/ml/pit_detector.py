@@ -3,14 +3,15 @@ import io
 import cv2
 import numpy as np
 import os
+import gc
 
 # Allow processing of large drone orthomosaics
 Image.MAX_IMAGE_PIXELS = None
 
 def detect_pits(image_bytes: bytes, gsd_cm_px: float = 2.5):
     """
-    Detects planting pits using memory-efficient Contour Analysis.
-    Optimized for massive 100MP+ TIF orthomosaics.
+    Detects planting pits using multi-threshold memory-efficient Contour Analysis.
+    Optimized for massive 100MP+ TIF orthomosaics across different terrains.
     """
     # 1. Memory-Efficient Loading (Pillow)
     img_pil = Image.open(io.BytesIO(image_bytes))
@@ -35,45 +36,54 @@ def detect_pits(image_bytes: bytes, gsd_cm_px: float = 2.5):
     # Release raw np image
     del image_np
     
-    # 3. Contour-Based Detection
-    # Pits are dark circular regions in lighter soil
-    thresh = cv2.adaptiveThreshold(
-        blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-        cv2.THRESH_BINARY_INV, 21, 10
-    )
-    
-    # Morphological cleanup
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-    
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
     all_circles = []
-    # Filtering criteria for pits: size and circularity
-    min_area = (20 / gsd_proc)**2 * np.pi / 4 # 20cm diameter min
-    max_area = (70 / gsd_proc)**2 * np.pi / 4 # 70cm diameter max
+    # 3. Multi-Threshold Strategy for robustness
+    # Different terrains require different sensitivities
+    threshold_configs = [
+        (21, 10), # Standard
+        (15, 7),  # High sensitivity
+        (31, 15)  # Global structure
+    ]
     
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        if min_area < area < max_area:
-            perl = cv2.arcLength(cnt, True)
-            if perl > 0:
-                circularity = 4 * np.pi * area / (perl * perl)
-                if circularity > 0.6: # circular enough
-                    (x, y), radius = cv2.minEnclosingCircle(cnt)
-                    all_circles.append((x, y, radius))
+    for block_size, C in threshold_configs:
+        thresh = cv2.adaptiveThreshold(
+            blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+            cv2.THRESH_BINARY_INV, block_size, C
+        )
+        
+        # Morphological cleanup
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # Filtering criteria for pits: size and circularity
+        min_area = (15 / gsd_proc)**2 * np.pi / 4 # 15cm min
+        max_area = (80 / gsd_proc)**2 * np.pi / 4 # 80cm max
+        
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if min_area < area < max_area:
+                perl = cv2.arcLength(cnt, True)
+                if perl > 0:
+                    circularity = 4 * np.pi * area / (perl * perl)
+                    if circularity > 0.5: # More relaxed circularity
+                        (x, y), radius = cv2.minEnclosingCircle(cnt)
+                        all_circles.append((x, y, radius))
+        
+        del thresh
     
     # Release processing buffers
     del blurred
-    del thresh
     
     if not all_circles:
         return []
 
     # 4. Global Deduplication
     detected_pits = []
-    dist_thresh = int(45 / gsd_proc) 
+    dist_thresh = int(40 / gsd_proc) # 40cm clustering
     
+    # Sort by "circularity-like" or size? Let's just use first-come deduplication
     for (x, y, r) in all_circles:
         is_duplicate = False
         for pit in detected_pits:

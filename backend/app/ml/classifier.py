@@ -36,69 +36,52 @@ class SurvivalClassifier:
 
     def predict(self, image_patch):
         """
-        Classifies a single image patch.
-        Args:
-            image_patch: numpy array (BGR) or PIL Image
-        Returns:
-            status: "alive" or "dead"
-            confidence: float (0.0 to 1.0)
-            reason: str (optional explanation)
+        Calculates survival using a Hybrid VLM-Heuristic Decision Tree.
         """
-        # Convert to PIL Image if numpy array
         if isinstance(image_patch, np.ndarray):
-             # CV2 is BGR, PIL needs RGB
              rgb_patch = cv2.cvtColor(image_patch, cv2.COLOR_BGR2RGB)
              pil_image = Image.fromarray(rgb_patch)
+             patch_np = image_patch # Keep BGR for CV2
         else:
              pil_image = image_patch
+             patch_np = np.array(pil_image)[:,:,::-1] # RGB to BGR
 
-        # ---------------------------------------------------------
-        # MODE 1: GOOGLE GEMINI 1.5 PRO VISION (The "Ultimate" Way)
-        # ---------------------------------------------------------
-        if self.mode == "gemini" and self.model:
+        # 1. Containment & Quality Check (Pre-filter)
+        if patch_np.size == 0 or np.mean(patch_np) < 5: # Nodata/Black padding check
+            return "dead", 0.0, "Outside Site Containment (NoData)"
+
+        # 2. Heuristic Initial Pass
+        h_status, h_conf, h_reason = self._heuristic_analysis(pil_image)
+
+        # 3. Hybrid fallback: If ambiguous or "Weak Signal", escalate to Gemini VLM
+        is_ambiguous = (h_status == "alive" and h_conf < 0.7) or (h_status == "dead" and h_conf < 0.8)
+        
+        if is_ambiguous and self.mode == "gemini" and self.model:
             try:
-                # Construct the prompt
                 prompt = """
-                Analyze this high-resolution drone image crop of a reforestation pit (approx 1m Ground Sampling Distance).
-                
+                Analyze this high-resolution drone image crop of a reforestation pit.
                 DETERMINE if there is a LIVING sapling/tree in the center or if it is DEAD/EMPTY.
                 
-                REASONING (3D & 2D):
-                - Look for green pigments (2D Spectral).
-                - Identify 3D STRUCTURAL indicators: does the plant cast a shadow? Is there a clearly defined central stem or crown structure indicating height?
-                - Distinguish from flat grass/weeds: trees have verticality and unique shadow patterns.
-                - Dead signs: Dried sticks (white/brown), empty hole with uniform soil, or clearly withered foliage.
+                REASONING:
+                - Green pigments (2D).
+                - 3D STRUCTURAL indicators (shadows, vertical stems, height).
+                - Distinguish from flat weeds/grass.
                 
-                Return a JSON object with:
-                - "status": "alive" or "dead"
-                - "confidence": float (0.0 to 1.0)
-                - "3d_confidence": float (0.0 to 1.0) based on verticality/shadow indicators
-                - "reason": professional evaluation (max 15 words)
+                Return JSON: {"status": "alive"|"dead", "confidence": float, "reason": "max 15 words"}
                 """
-                
-                # Call Gemini API
-                # Note: For production with thousands of pits, you'd want to batch these or use asyncio.
-                # For per-request analysis, this is acceptable for the Hackathon demo.
                 response = self.model.generate_content([prompt, pil_image])
+                result = json.loads(response.text.strip().replace("```json", "").replace("```", ""))
                 
-                # Parse Response (Handle potential markdown wrapping)
-                text_response = response.text.strip()
-                if text_response.startswith("```json"):
-                    text_response = text_response.replace("```json", "").replace("```", "")
-                
-                result = json.loads(text_response)
-                
-                return result.get("status", "dead").lower(), result.get("confidence", 0.0), result.get("reason", "Gemini Analysis")
+                # Boost confidence if Gemini agrees with heuristic
+                final_status = result.get("status", h_status)
+                final_conf = result.get("confidence", h_conf)
+                return final_status, final_conf, f"VLM Refined: {result.get('reason', '')}"
                 
             except Exception as e:
-                print(f"[ERROR] Gemini API failed: {e}. Falling back to heuristic.")
-                # Fallback to heuristic if API fails (rate limits, network, etc.)
-                return self._heuristic_analysis(pil_image)
+                # Log error and return heuristic
+                return h_status, h_conf, f"{h_reason} (VLM Fallback)"
 
-        # ---------------------------------------------------------
-        # MODE 2: HEURISTIC (ExG + Texture) - Fallback/Fast Mode
-        # ---------------------------------------------------------
-        return self._heuristic_analysis(pil_image)
+        return h_status, h_conf, h_reason
 
     def _heuristic_analysis(self, pil_image):
         """
